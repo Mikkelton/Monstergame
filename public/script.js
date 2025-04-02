@@ -2,13 +2,40 @@ const Board_Size = 20;
 const cellSize = calculateCellSize();
 let board;
 let player;
+let ghosts = [];
 
 document.getElementById('new-game-btn').addEventListener('click',startgame)
+document.addEventListener('keydown', (event)=>{
+    switch(event.key){
+        case 'ArrowUp':
+            player.move(0,-1);
+        break;
+
+        case 'ArrowDown':
+            player.move(0,1);
+        break;
+
+        case 'ArrowRight':
+            player.move(1,0);
+        break;
+
+        case 'ArrowLeft':
+            player.move(-1,0);
+        break;
+
+        case 'w':
+            shootAt(player.x,player.y -1);
+        break;
+    }
+    event.preventDefault();
+})
 
 function startgame(){
     console.log('klikattu')
     document . getElementById('intro-screen').style.display = 'none';
     document . getElementById('game-screen').style.display = 'block';
+
+    player = new Player(0,0);
 
     board = generateRandomBoard();
 
@@ -31,6 +58,14 @@ function generateRandomBoard(){
 
     const [playerX, playerY] = randomEmptyPosition(newBoard);
     setCell(newBoard,playerX, playerY, 'P');
+    player.x = playerX;
+    player.y = playerY;
+
+    for(let i = 0; i < 5; i++){
+        const [ghostX, ghostY] = randomEmptyPosition(newBoard);
+        setCell(newBoard,ghostX, ghostY,'G');
+        
+    }
 
     return newBoard;
 }
@@ -38,6 +73,7 @@ function generateRandomBoard(){
 function drawBoard(board){
     const gameBoard = document.getElementById('game-board');
     gameBoard.style.gridTemplateColumns = `repeat(${Board_Size},1fr)`;
+    gameBoard.innerHTML = "";
 
     for(let y = 0; y < Board_Size; y++){
         for(let x = 0; x < Board_Size; x++){
@@ -49,6 +85,11 @@ function drawBoard(board){
                 cell.classList.add('wall');
             }else if (getCell(board,x,y) === 'P'){
                 cell.classList.add('player');
+            }else if(getCell(board,x,y) === 'G'){
+                cell.classList.add('ghost')
+            }
+            else if(getCell(board,x,y)==='B'){
+                cell.classList.add('bullet')
             }
 
             gameBoard.appendChild(cell);
@@ -104,10 +145,62 @@ function randomInt(min,max){
 function randomEmptyPosition(board){
     x = randomInt(1,Board_Size - 2);
     y = randomInt(1,Board_Size - 2);
-
-    return [x,y];
+    if(getCell(board, x, y) === ''){
+        return [x,y];
+    }  
+    else{
+        return randomEmptyPosition(board);
+    }
 }
 
 function setCell(board, x, y, value){
     board[y][x] = value;
+}
+
+function shootAt(x,y){
+    if(getCell(board,x,y) === 'W'){
+        return;
+    }
+    setCell(board,x,y,'B');
+    drawBoard(board);
+}
+
+class Player{
+    constructor(x,y){
+        this.x = y;
+        this.y = y;
+    }
+    move(deltaX, deltaY){
+        
+            
+        const currentX = player.x;
+        const currentY = player.y;
+
+
+        const newX = currentX + deltaX;
+        const newY = currentY + deltaY;
+
+        if(getCell(board, newX, newY) === ''){
+            player.x = newX;
+            player.y = newY;
+
+
+            setCell(board,currentX, currentY,'');
+
+            setCell(board,newX,newY,'P');
+
+            drawBoard(board);
+        }
+
+        
+        
+
+    }
+}
+
+class Ghost{
+    constructor(x,y){
+        this.x = x;
+        this.y = y;
+    }
 }

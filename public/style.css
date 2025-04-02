@@ -85,3 +85,13 @@ button{
     background-image: url('images/Image20250122162558.png');
     background-size: cover;
 }
+
+.ghost{
+    background-image: url('images/Image20250122162619.png');
+    background-size: cover;
+}
+
+.bullet{
+    background-color: red;
+    border-radius: 50%;
+}
