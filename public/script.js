@@ -3,9 +3,17 @@ const cellSize = calculateCellSize();
 let board;
 let player;
 let ghosts = [];
+let ghostSpeed = 1000;
+let isGameRunning = false;
+let ghostInterval;
+let score = 0;
+let ghostNumber = 1;
 
 document.getElementById('new-game-btn').addEventListener('click',startgame)
 document.addEventListener('keydown', (event)=>{
+    if(!isGameRunning){
+        return;
+    }
     switch(event.key){
         case 'ArrowUp':
             player.move(0,-1);
@@ -24,7 +32,19 @@ document.addEventListener('keydown', (event)=>{
         break;
 
         case 'w':
-            shootAt(player.x,player.y -1);
+            shootAt(player.x, player.y - 1);
+        break;
+
+        case 's':
+            shootAt(player.x, player.y + 1);
+        break;
+
+        case 'a':
+            shootAt(player.x - 1, player.y);
+        break;
+
+        case 'd':
+            shootAt(player.x + 1, player.y);
         break;
     }
     event.preventDefault();
@@ -40,6 +60,14 @@ function startgame(){
     board = generateRandomBoard();
 
     drawBoard(board);
+
+    setTimeout(()=>{
+        ghostInterval =setInterval(moveGhosts,ghostSpeed);
+    }, 1000);
+
+    isGameRunning = true;
+    score = 0;
+    updateScoreBoard(0);
 }
 
 function generateRandomBoard(){
@@ -61,10 +89,11 @@ function generateRandomBoard(){
     player.x = playerX;
     player.y = playerY;
 
-    for(let i = 0; i < 5; i++){
+    ghosts = [];
+    for(let i = 0; i < ghostNumber; i++){
         const [ghostX, ghostY] = randomEmptyPosition(newBoard);
         setCell(newBoard,ghostX, ghostY,'G');
-        
+        ghosts.push(new Ghost(ghostX,ghostY));
     }
 
     return newBoard;
@@ -90,6 +119,9 @@ function drawBoard(board){
             }
             else if(getCell(board,x,y)==='B'){
                 cell.classList.add('bullet')
+                setTimeout(()=>{
+                    setCell(board,x,y,'');
+                },400);
             }
 
             gameBoard.appendChild(cell);
@@ -161,8 +193,74 @@ function shootAt(x,y){
     if(getCell(board,x,y) === 'W'){
         return;
     }
+
+    const ghostIndex = ghosts.findIndex(ghost => ghost.x === x && ghost.y === y);
+    
+    if(ghostIndex !== -1){
+        ghosts.splice(ghostIndex,1);
+        updateScoreBoard(50);
+    }
+
     setCell(board,x,y,'B');
     drawBoard(board);
+
+    if(ghosts.length === 0){
+        startNextlevel();
+    }
+}
+
+function moveGhosts(){
+    const oldGhost = ghosts.map(ghost =>({x:ghost.x, y:ghost.y}));
+
+    ghosts.forEach(ghost =>{
+        const newPosition = ghost.moveGhostTowardsPlayer(player,board);
+        ghost.x = newPosition.x;
+        ghost.y = newPosition.y;
+
+        setCell(board,ghost.x, ghost.y,'G');
+
+        oldGhost.forEach(ghost =>{
+            setCell(board,ghost.x,ghost.y,'');
+        });
+
+        ghosts.forEach(ghost =>{
+            setCell(board,ghost.x,ghost.y,'G');
+        });
+
+        if(ghost.x === player.x && ghost.y === player.y){
+            endGame();
+            return;
+        }
+
+        drawBoard(board);
+    });
+}
+
+function endGame(){
+    isGameRunning = false;
+    alert('YOU LOSE!');
+    document.getElementById('intro-screen').style.display = 'block';
+    document.getElementById('game-screen').style.display = 'none';
+    clearInterval(ghostInterval);
+}
+
+function updateScoreBoard(points){
+    const scoreBoard = document.getElementById('score-board');
+    score += points;
+    scoreBoard.textContent = `Pisteet: ${score}`;
+}
+
+function startNextlevel(){
+    alert('Next level. The ghost are faster now. Be careful!');
+    ghostNumber ++;
+    board = generateRandomBoard();
+    drawBoard(board);
+    ghostSpeed *= 0.9;
+    clearInterval(ghostInterval);
+    setTimeout(()=>{
+        ghostInterval = setInterval(moveGhosts,ghostSpeed);
+    }, 1000);
+    
 }
 
 class Player{
@@ -202,5 +300,35 @@ class Ghost{
     constructor(x,y){
         this.x = x;
         this.y = y;
+    }
+
+    moveGhostTowardsPlayer(player,board){
+        let dx = player.x - this.x;
+        let dy = player.y - this.y;
+
+        let moves =[];
+
+        if(Math.abs(dx) > Math.abs(dy)){
+            if(dx > 0) moves.push({x:this.x +1, y:this.y});
+            else moves.push({x:this.x -1, y:this.y}); //liikutaan vasemmalle
+            //pystysuuntainen liike
+            if(dy > 0) moves.push({x:this.x, y:this.y + 1}); //liikutaan alaspäin
+            else moves.push({x:this.x, y:this.y -1}); //liikutaan ylöspäin
+        }
+        else{
+            if(dy > 0) moves.push({x:this.x, y:this.y + 1}); //liikutaan alaspäin
+            else moves.push({x:this.x, y:this.y -1});
+
+            if(dx > 0) moves.push({x:this.x +1, y:this.y});
+            else moves.push({x:this.x -1, y:this.y});
+        }
+
+        for(let move of moves){
+            if(getCell(board,move.x, move.y) === '' || getCell(board, move.x,move.y) === 'P'){
+                return move;
+            }
+        }
+
+        return{x:this.x, y:this.y};
     }
 }

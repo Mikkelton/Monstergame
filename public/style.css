@@ -94,4 +94,25 @@ button{
 .bullet{
     background-color: red;
     border-radius: 50%;
+    animation: fadeOut 0.5s ease-out;
+}
+
+@keyframes fadeOut{
+    0%{
+        opacity: 1;
+    }
+    100%{
+        opacity: 0;
+    }
+}
+
+#score-board{
+    font-size: 24px;
+    font-weight: bold;
+    margin: 10px;
+    color: #ffffff;
+    position: absolute;
+    top: 10px;
+    left: 5px;
+    z-index: 10;
 }
